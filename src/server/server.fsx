@@ -117,8 +117,8 @@ let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) =
 
 let validateCommand status cmd = 
   match status, cmd with
-  | {TurnedOn=false}, TurnOn(_) -> Some(cmd) // turn on only when currently off
-  | {TurnedOn=true}, TurnOff(_) -> Some(cmd) // turn off only when currently on
+  | {TurnedOn=false}, TurnOn -> Some(cmd) // turn on only when currently off
+  | {TurnedOn=true}, TurnOff -> Some(cmd) // turn off only when currently on
   | {TurnedOn=true}, SetSpeedLimit(_) -> Some(cmd) // set limit only when on (?)
   | _ -> None // other cases are forbiden
 
