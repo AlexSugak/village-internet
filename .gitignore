@@ -1,0 +1,52 @@
+bin/
+obj/
+packages/
+build/
+gh-pages/
+docs/output/
+miTLS/
+.bundle/
+.fake/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+*.userprefs
+*.swp
+*.suo
+
+_UpgradeReport_Files/
+Backup/
+test-results/
+
+AssemblyVersionInfo.fs
+paket.exe
+*.lock
+!paket.lock
+*.nuspec
+
+.DS_Store
+*.bak
+paket-files/
+docs/output/
+
+project.lock.json
+*.project.lock.json
+dotnet-dev-*
+tools/coreclr/
+dotnet_cli_install.ps1
+
+
+# Dependency directories
+node_modules
+jspm_packages
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+bundle.js
