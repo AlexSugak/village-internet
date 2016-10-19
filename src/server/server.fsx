@@ -39,7 +39,6 @@ let ms n = TimeSpan.FromMilliseconds n
 let utfStr bytes = Encoding.UTF8.GetString bytes
 let utfBytes (str: string) = Encoding.UTF8.GetBytes str
 
-
 type AccountId = AccountId of string
 
 type EndpointStatus = {
@@ -62,12 +61,10 @@ type AccountEvent =
 | StatusMeasured of EndpointStatus
 | StatusSet of EndpointStatus
 
-
 let accountStateReducer state msg =
   match msg with
-  | StatusMeasured(s) -> {state with StatusMeasured= Some(s)}
-  | StatusSet(s) -> {state with StatusSet= Some(s)}
-
+  | StatusMeasured(s) -> {state with StatusMeasured = Some(s)}
+  | StatusSet(s) -> {state with StatusSet = Some(s)}
 
 type ClientId = ClientId of Guid
 
@@ -85,14 +82,14 @@ type Agent<'T> = Microsoft.FSharp.Control.MailboxProcessor<'T>
 
 let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) = 
   let agent = new Agent<AccountCommand>(fun inbox ->
-    let state = ref {TurnedOn= false; Speed= 0}
+    let state = ref {TurnedOn = false; Speed = 0}
     let rec handleCmd() = 
       async {
         let! cmd = inbox.Receive()
         match validateCommand !state cmd with
-        | Some(TurnOn)           -> state := {!state with TurnedOn= true}
-        | Some(TurnOff)          -> state := {!state with TurnedOn= false}
-        | Some(SetSpeedLimit(l)) -> state := {!state with Speed= l}
+        | Some(TurnOn)           -> state := {!state with TurnedOn = true}
+        | Some(TurnOff)          -> state := {!state with TurnedOn = false}
+        | Some(SetSpeedLimit(l)) -> state := {!state with Speed = l}
         | None -> printfn "%A is not acceptable for state %A"cmd !state
         
         accEvents.OnNext (StatusSet !state)     
@@ -106,14 +103,13 @@ let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) =
                         | b when b > 0 -> let random = System.Random()
                                           random.Next(b / 2, b)
                         | b -> b 
-            accEvents.OnNext (StatusMeasured({!s with Speed= level})))
+            accEvents.OnNext (StatusMeasured({!s with Speed = level})))
     |> ignore
 
     handleCmd()
   )
   agent.Start()
   agent
-
 
 let validateCommand status cmd = 
   match status, cmd with
@@ -143,7 +139,6 @@ let clientCommands = clientMessages
                                         | (id, ClientCommand(cmd)) -> Some(id, cmd) 
                                         | _ -> None)
 
-
 // test data
 let accounts = 
   [
@@ -162,9 +157,9 @@ let accountEvents = accounts
 let accountStates = accountEvents
                       |> List.map (fun (id, e) -> 
                                     e 
-                                    |> Obs.scanInit { AccountId= id
-                                                      StatusMeasured= None
-                                                      StatusSet= None }
+                                    |> Obs.scanInit { AccountId = id
+                                                      StatusMeasured = None
+                                                      StatusSet = None }
                                                     accountStateReducer
                                     |> fun s -> (id, s))
 
@@ -186,7 +181,7 @@ accountEvents
               connectEndpoint clientCommands events id 
               |> ignore)
 
-//type used as payload when sending server state to clients
+// type used as payload when sending server state to clients
 type AccountDetails = 
   { AccountId: string
     TurnedOn: bool
@@ -297,7 +292,6 @@ let app : WebPart =
         NOT_FOUND "Found no handlers"
     ]
 
-startWebServer { defaultConfig 
-                  with homeFolder = Some (Path.GetFullPath(Environment.CurrentDirectory + "/../yardWeb/dist/"))
-               } 
+startWebServer {defaultConfig 
+                with homeFolder = Some (Path.GetFullPath(Environment.CurrentDirectory + "/../yardWeb/dist/"))} 
                app 
