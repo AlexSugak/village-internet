@@ -8,11 +8,6 @@ import {AppContainer} from './components/App'
 import {endpoints} from './reducers'
 import {receivedServerState} from './actions'
 
-const reducers = combineReducers({endpoints})
-const store = createStore(reducers)
-
-const wsUri = "ws://localhost:8083/socket"
-
 let createMessagesStream = (url) => {
     let socket = new WebSocket(url)
     let observable = Rx.Observable.create(obs => {
@@ -30,7 +25,26 @@ let createMessagesStream = (url) => {
     return Rx.Subject.create(observer, observable)
 }
 
+const wsUri = "ws://localhost:8083/socket"
 let messages = createMessagesStream(wsUri);
+
+const remoteMiddleware = msgObserver => store => next => action => {
+  if (action.remote) {
+    console.log('sending to server:', action.remote)
+    msgObserver.onNext(action.remote)
+  }
+  return next(action)
+}
+
+const createStoreWithMiddleware = applyMiddleware(
+  remoteMiddleware(messages)
+)(createStore)
+
+const reducers = combineReducers({endpoints})
+const store = createStoreWithMiddleware(reducers)
+
+
+
 
 //log all server messages to console
 messages.subscribe(m => console.log('message received:', m));
@@ -45,7 +59,6 @@ messages
     state => store.dispatch(receivedServerState(JSON.parse(state)))
 );
 
-window.messages = messages
 
 ReactDOM.render(
   <Provider store={store}>
