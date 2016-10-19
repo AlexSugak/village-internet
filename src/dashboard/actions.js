@@ -26,7 +26,7 @@ export function turnOn(id){
 
 export function turnOff(id){
     return {
-        type: 'TURN_ENDPOINT_ON',
+        type: 'TURN_ENDPOINT_OFF',
         id,
         remote: `turnOff ${id}`
     }
