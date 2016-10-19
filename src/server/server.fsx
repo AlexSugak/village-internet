@@ -143,18 +143,6 @@ let clientCommands = clientMessages
                                         | (id, ClientCommand(cmd)) -> Some(id, cmd) 
                                         | _ -> None)
 
-let connectEndpoint commands events accountId = 
-  let agent = createEndpointAgent validateCommand events
-
-  commands
-  |> Obs.map snd // we need all commands
-  |> Obs.filter (fun (id, _) -> id = accountId) // to our endpoint
-  |> Obs.map snd // and we only care about the command itself
-  |> Obs.subscribe agent.Post // that we send to an agent
-  |> ignore
-
-  agent // return agent created
-
 
 // test data
 let accounts = 
@@ -180,9 +168,22 @@ let accountStates = accountEvents
                                                     accountStateReducer
                                     |> fun s -> (id, s))
 
+let connectEndpoint commands events accountId = 
+  let agent = createEndpointAgent validateCommand events
+
+  commands
+  |> Obs.map snd // we need all commands
+  |> Obs.filter (fun (id, _) -> id = accountId) // to our endpoint
+  |> Obs.map snd // and we only care about the command itself
+  |> Obs.subscribe agent.Post // that we send to an agent
+  |> ignore
+
+  agent // return agent created
+
+// connect all account endpoints
 accountEvents 
-|> Seq.iter (fun (id, accountEvents) -> 
-              connectEndpoint clientCommands accountEvents id 
+|> Seq.iter (fun (id, events) -> 
+              connectEndpoint clientCommands events id 
               |> ignore)
 
 //type used as payload when sending server state to clients
