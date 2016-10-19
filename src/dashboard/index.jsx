@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {Provider} from 'react-redux'
-
+import Rx from 'rx'
 
 import {AppContainer} from './components/App'
 import {endpoints} from './reducers'
@@ -12,8 +12,6 @@ const reducers = combineReducers({endpoints})
 const store = createStore(reducers)
 
 const wsUri = "ws://localhost:8083/socket"
-
-import Rx from 'rx'
 
 let createMessagesStream = (url) => {
     let socket = new WebSocket(url)
