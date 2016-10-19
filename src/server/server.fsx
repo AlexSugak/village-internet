@@ -101,7 +101,7 @@ let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) =
     |> Obs.subscribe (fun s -> 
             let level = match (!s).Speed with 
                         | b when b > 0 -> let random = System.Random()
-                                          random.Next(b / 2, b)
+                                          random.Next((float b / 1.5) |> int, b)
                         | b -> b 
             accEvents.OnNext (StatusMeasured({!s with Speed = level})))
     |> ignore
