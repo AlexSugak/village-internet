@@ -122,6 +122,7 @@ let validateCommand status cmd =
   | {TurnedOn=true}, SetSpeedLimit(_) -> Some(cmd) // set limit only when on (?)
   | _ -> None // other cases are forbiden
 
+// parse command messages
 let (|ClientCommand|_|) (s:string) = 
   let tokens = s.Trim().Split([|' '|]) |> Array.map (fun s -> s.Trim())
   match tokens.[0] with
@@ -137,18 +138,18 @@ let clientMessages = clientEvents
                                         | _ -> None)
 
 let clientCommands = clientMessages
-                       |> Obs.map snd
                        |> Obs.choose (function 
-                                        | ClientCommand(cmd) -> Some(cmd) 
+                                        | (id, ClientCommand(cmd)) -> Some(id, cmd) 
                                         | _ -> None)
 
 let connectEndpoint commands events accountId = 
   let agent = createEndpointAgent validateCommand events
 
   commands
-  |> Obs.filter (fun (id, _) -> id = accountId)
-  |> Obs.map snd 
-  |> Obs.subscribe agent.Post // post all commands to an agent
+  |> Obs.map snd // we need all commands
+  |> Obs.filter (fun (id, _) -> id = accountId) // to our endpoint
+  |> Obs.map snd // and we only care about the command itself
+  |> Obs.subscribe agent.Post // that we send to an agent
   |> ignore
 
   agent // return agent created
@@ -219,15 +220,13 @@ allStates
 
 let send (ws: WebSocket) text =
   async { 
-    let! r = ws.send Text (text |> utfBytes) true
-    () 
-  } 
+    do! ws.send Text (text |> utfBytes) true |> Async.Ignore
+  }
   |> Async.Start
-
+  
 let sendOp (ws: WebSocket) opCode bytes =
   async { 
-    let! r = ws.send opCode bytes true
-    () 
+    do! ws.send opCode bytes true |> Async.Ignore
   } 
   |> Async.Start
 
@@ -245,12 +244,16 @@ let socketApp (ws: WebSocket) =
   fun cx -> socket {
     let clientId = Guid.NewGuid() |> ClientId
 
+    //subscribe client to server state updates
+    detailsBuffer 
+    |> Obs.subscribe (Json.serialize >> Json.format >> send ws)
+    |> ignore 
+
     let clientDisconnected = clientEvents 
                              |> Obs.choose (function 
                                               | (id, ClientDisconnected) -> Some(id) 
                                               | _ -> None)
                              |> Obs.filter (fun id -> id = clientId)
-
     let loop = ref true
     clientDisconnected 
     |> Obs.subscribe (fun id -> 
@@ -258,19 +261,17 @@ let socketApp (ws: WebSocket) =
                               sendOp ws Close [||]) 
     |> ignore
 
-    detailsBuffer 
-    |> Obs.subscribe (Json.serialize >> Json.format >> send ws)
-    |> ignore 
-
-    clientEvents.OnNext (clientId, ClientConnected)
-    ping ws |> ignore
-
+    //all messages from connected client
     let messagesFromClient = clientMessages 
                               |> Obs.filter (fun (cId, msg) -> cId = clientId)
                               |> Obs.map snd
 
+    //ping client and listed for echo
+    ping ws |> ignore
     listenForEcho clientId messagesFromClient clientEvents |> ignore
 
+    clientEvents.OnNext (clientId, ClientConnected)
+    
     while !loop do
       let! msg = ws.read()
       match msg with
