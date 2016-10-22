@@ -45,7 +45,7 @@ const store = createStoreWithMiddleware(reducers)
 
 
 //log all server messages to console
-messages.subscribe(m => console.log('message received:', m));
+//messages.subscribe(m => console.log('message received:', m));
 
 //echo all heartbeets back to server
 messages

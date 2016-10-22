@@ -55,8 +55,7 @@ const SpeedBar = ({min, max, value}) => (
 const SpeedLimit = 
     ({currentLimit, onSetSpeed}) => (
     <input 
-        onChange={e => onSetSpeed(
-                        e.currentTarget.valueAsNumber)} 
+        onChange={e => onSetSpeed(e.currentTarget.valueAsNumber)} 
         value={currentLimit} 
         type="range" 
         min="0" 
@@ -67,7 +66,7 @@ const SpeedLimit =
 const EndpointInfo = 
     ({endpoint, onSelectEndpoint}) => (
     <div className="col-md-2">
-        <a href="#" style={{display:'inline', marginRight:'5px'}} onClick={onSelectEndpoint}>
+        <a href="#" onClick={onSelectEndpoint}>
             {endpoint.id}
         </a><br/>
         <span className="label label-info">
@@ -115,17 +114,15 @@ const EndpointsList =
 export const App = ({endpoints, chart, setSpeed, turnOn, turnOff, endpointSelected}) => (
     <div className="container">
         <TopNav projectName="Village Internet" />
-        <div>
-            <EndpointsList 
-                endpoints={endpoints}
-                onSetSpeed={setSpeed}
-                onTurnOn={turnOn}
-                onTurnOff={turnOff} 
-                onSelectEndpoint={endpointSelected}/>
-        </div>
-        {chart.selected && <div>
-            <h4>{chart.selected} Speed:</h4>
-            <EndpointChart data={chart.data}/>}
+        <EndpointsList 
+            endpoints={endpoints}
+            onSetSpeed={setSpeed}
+            onTurnOn={turnOn}
+            onTurnOff={turnOff} 
+            onSelectEndpoint={endpointSelected}/>
+        {chart && chart.selected && <div>
+            <h4>{chart.selected} speed:</h4>
+            <EndpointChart data={chart.data}/>
         </div>}
     </div>
 )

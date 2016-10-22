@@ -30,8 +30,8 @@ const rememberSpeed = (history, id, newSpeed) => {
                         .filter(d => d.id === id)
                         .map(d => { 
                             return { 
-                                    speed: d.speed, 
-                                    limit: d.speedSet
+                                speed: d.speed, 
+                                limit: d.speedSet
                             }
                         })[0]
 
