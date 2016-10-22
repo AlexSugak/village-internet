@@ -17,7 +17,7 @@ export function endpoints(state=initialState, action){
             return action.state
         case 'SET_ENDPOINT_SPEED':
             return state.map(e => e.id === action.id 
-                                ? setSpeedSet(e)
+                                ? setSpeedSet(e, action.speed)
                                 : e)
         default:
             return state

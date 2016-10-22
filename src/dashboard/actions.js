@@ -7,12 +7,12 @@ export function receivedServerState(state){
     }
 }
 
-export function setSpeed(id, volume){
+export function setSpeed(id, speed){
     return {
         type: 'SET_ENDPOINT_SPEED',
         id,
-        volume,
-        remote: `setSpeedLimit ${id} ${volume}`
+        speed,
+        remote: `setSpeedLimit ${id} ${speed}`
     }
 }
 

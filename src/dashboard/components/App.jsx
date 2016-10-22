@@ -6,8 +6,7 @@ import {connect} from 'react-redux'
 import * as actions from '../actions'
 
 
-const EndpointChart = ({data}) => {
-    return (
+const EndpointChart = ({data}) => (
     <div className="row">
         <div className="col-md-11" style={{height: '400px', paddingTop:'20px'}}>
             <ResponsiveContainer>
@@ -22,26 +21,23 @@ const EndpointChart = ({data}) => {
             </ResponsiveContainer>
         </div>
     </div>
-    )
-}
+)
 
-const TopNav = ({projectName}) => {
-    return (
-        <Navbar>
-            <Navbar.Header>
-                <Navbar.Brand>
-                    <a href="#">{projectName}</a>
-                </Navbar.Brand>
-                <Navbar.Toggle />
-            </Navbar.Header>
-            <Navbar.Collapse>
-                <Nav>
-                    <NavItem eventKey={1} href="#">Home</NavItem>
-                </Nav>
-            </Navbar.Collapse>
-        </Navbar>
-    )
-}
+const TopNav = ({projectName}) => (
+    <Navbar>
+        <Navbar.Header>
+            <Navbar.Brand>
+                <a href="#">{projectName}</a>
+            </Navbar.Brand>
+            <Navbar.Toggle />
+        </Navbar.Header>
+        <Navbar.Collapse>
+            <Nav>
+                <NavItem eventKey={1} href="#">Home</NavItem>
+            </Nav>
+        </Navbar.Collapse>
+    </Navbar>
+)
 
 const SpeedBar = ({min, max, value}) => (
     <ProgressBar
@@ -52,8 +48,7 @@ const SpeedBar = ({min, max, value}) => (
             />
 )
 
-const SpeedLimit = 
-    ({currentLimit, onSetSpeed}) => (
+const SpeedLimit = ({currentLimit, onSetSpeed}) => (
     <input 
         onChange={e => onSetSpeed(e.currentTarget.valueAsNumber)} 
         value={currentLimit} 
@@ -63,8 +58,7 @@ const SpeedLimit =
         step="1" />
 )
 
-const EndpointInfo = 
-    ({endpoint, onSelectEndpoint}) => (
+const EndpointInfo = ({endpoint, onSelectEndpoint}) => (
     <div className="col-md-2">
         <a href="#" onClick={onSelectEndpoint}>
             {endpoint.id}
@@ -96,8 +90,7 @@ const Endpoint = ({endpoint, onTurnOn, onTurnOff, onSetSpeed, onSelectEndpoint})
     </div>
 )
 
-const EndpointsList = 
-    ({endpoints, onTurnOn, onTurnOff, onSetSpeed, onSelectEndpoint}) => (
+const EndpointsList = ({endpoints, onTurnOn, onTurnOff, onSetSpeed, onSelectEndpoint}) => (
     <div>
         {endpoints.map(e => 
             <Endpoint 

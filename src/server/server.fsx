@@ -97,7 +97,7 @@ let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) =
       } 
 
     //emulate periodic measurements
-    Obs.interval (300.0 |> ms) 
+    Obs.interval (500.0 |> ms) 
     |> Obs.map (fun i -> state)
     |> Obs.subscribe (fun s -> 
         let level = match (!s).Speed with 
