@@ -23,10 +23,12 @@
     "debug": "^2.2.0",
     "immutable": "^3.8.1",
     "react": "^15.2.0",
+    "react-addons-transition-group": "^15.3.2",
     "react-bootstrap": "^0.30.5",
     "react-bootstrap-switch": "^15.0.0",
     "react-dom": "^15.2.0",
     "react-redux": "^4.4.5",
+    "recharts": "^0.15.2",
     "redux": "^3.6.0",
     "rx": "^4.1.0"
   },

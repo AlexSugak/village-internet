@@ -87,23 +87,25 @@ let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) =
       async {
         let! cmd = inbox.Receive()
         match validateCommand !state cmd with
-        | Some(TurnOn)           -> state := {!state with TurnedOn = true}
-        | Some(TurnOff)          -> state := {!state with TurnedOn = false}
+        | Some(TurnOn) -> state := {!state with TurnedOn = true}
+        | Some(TurnOff) -> state := {!state with TurnedOn = false}
         | Some(SetSpeedLimit(l)) -> state := {!state with Speed = l}
-        | None -> printfn "%A is not acceptable for state %A"cmd !state
-        
+        | None -> printfn "%A is not acceptable!" cmd
+
         accEvents.OnNext (StatusSet !state)     
         return! handleCmd()
       } 
 
-    Obs.interval (300.0 |> ms) //emulate periodic measurements
+    //emulate periodic measurements
+    Obs.interval (300.0 |> ms) 
     |> Obs.map (fun i -> state)
     |> Obs.subscribe (fun s -> 
-            let level = match (!s).Speed with 
-                        | b when b > 0 -> let random = System.Random()
-                                          random.Next((float b / 1.5) |> int, b)
-                        | b -> b 
-            accEvents.OnNext (StatusMeasured({!s with Speed = level})))
+        let level = match (!s).Speed with 
+                    | b when b > 0 -> 
+                        let random = System.Random()
+                        random.Next((float b/1.5) |> int, b)
+                    | b -> b 
+        accEvents.OnNext (StatusMeasured ({!s with Speed = level})))
     |> ignore
 
     handleCmd()
@@ -113,10 +115,14 @@ let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) =
 
 let validateCommand status cmd = 
   match status, cmd with
-  | {TurnedOn=false}, TurnOn -> Some(cmd) // turn on only when currently off
-  | {TurnedOn=true}, TurnOff -> Some(cmd) // turn off only when currently on
-  | {TurnedOn=true}, SetSpeedLimit(_) -> Some(cmd) // set limit only when on (?)
-  | _ -> None // other cases are forbiden
+  // turn on only when currently off
+  | {TurnedOn=false}, TurnOn -> Some(cmd) 
+  // turn off only when currently on
+  | {TurnedOn=true}, TurnOff -> Some(cmd) 
+  // set limit only when on (?)
+  | {TurnedOn=true}, SetSpeedLimit(_) -> Some(cmd)
+  // other cases are forbiden 
+  | _ -> None 
 
 // parse command messages
 let (|ClientCommand|_|) (s:string) = 
@@ -128,16 +134,18 @@ let (|ClientCommand|_|) (s:string) =
   | _ -> None
 
 // all messages sent by all clients
-let clientMessages = clientEvents 
-                       |> Obs.choose (function 
-                                        | (id, MessageReceived(msg)) -> Some(id, msg) 
-                                        | _ -> None)
+let clientMessages = 
+    clientEvents 
+      |> Obs.choose (function 
+                      | (id, MessageReceived(msg)) -> Some(id, msg) 
+                      | _ -> None)
 
 // all command messages sent by all clients
-let clientCommands = clientMessages
-                       |> Obs.choose (function 
-                                        | (id, ClientCommand(cmd)) -> Some(id, cmd) 
-                                        | _ -> None)
+let clientCommands = 
+    clientMessages
+      |> Obs.choose (function 
+                      | (id, ClientCommand(cmd)) -> Some(id, cmd) 
+                      | _ -> None)
 
 // test data
 let accounts = 
@@ -147,39 +155,36 @@ let accounts =
     AccountId("tor.torbings")
   ] 
 
-let accountEvents = accounts
-                      |> List.map (fun id ->
-                                    let s = new Subject<AccountEvent>()
-                                    (id, s))
-                      //|> Observable.ofSeq   // if we need to make list of accounts dynamic 
-                                              // e.g. new accounts are connected at runtime
+let accountEvents = 
+    accounts
+      |> List.map (fun id ->
+                    let s = new Subject<AccountEvent>()
+                    (id, s))
+      //|> Observable.ofSeq   
+      // if we need to make list of accounts dynamic 
+      // e.g. new accounts are connected at runtime
 
-let accountStates = accountEvents
-                      |> List.map (fun (id, e) -> 
-                                    e 
-                                    |> Obs.scanInit { AccountId = id
-                                                      StatusMeasured = None
-                                                      StatusSet = None }
-                                                    accountStateReducer
-                                    |> fun s -> (id, s))
+
 
 let connectEndpoint commands events accountId = 
   let agent = createEndpointAgent validateCommand events
 
   commands
-  |> Obs.map snd // we need all commands
-  |> Obs.filter (fun (id, _) -> id = accountId) // to our endpoint
-  |> Obs.map snd // and we only care about the command itself
-  |> Obs.subscribe agent.Post // that we send to an agent
+  // we need all commands
+  |> Obs.map snd 
+  // to our endpoint
+  |> Obs.filter (fun (id, _) -> id = accountId)
+  // and we only care about the command itself 
+  |> Obs.map snd 
+  // that we send to an agent
+  |> Obs.subscribe agent.Post 
   |> ignore
 
   agent // return agent created
 
 // connect all account endpoints
 accountEvents 
-|> Seq.iter (fun (id, events) -> 
-              connectEndpoint clientCommands events id 
-              |> ignore)
+|> Seq.iter (fun (id, events) -> connectEndpoint clientCommands events id |> ignore)
 
 // type used as payload when sending server state to clients
 type AccountDetails = 
@@ -204,17 +209,30 @@ type AccountDetails =
                            | Some(s) -> s.Speed
                            | None -> 0}
 
-let appState = accountStates 
-                |> Seq.map snd
-                |> Obs.combineLatestSeq
-                |> Obs.map List.ofSeq
+let accountStates = 
+    accountEvents
+    |> List.map (fun (id, e) -> 
+                  e 
+                  |> Obs.scanInit { AccountId = id
+                                    StatusMeasured = None
+                                    StatusSet = None }
+                                  accountStateReducer
+                  |> fun s -> (id, s))
 
-//need to buffer latest state so that new clients receive it when connected
+let appState = 
+    accountStates 
+    |> Seq.map snd
+    |> Obs.combineLatestSeq
+    |> Obs.map List.ofSeq
+
+// need to buffer latest state 
+// so that new clients receive it when connected
 let appStateBuffer = new ReplaySubject<AccountDetails list>(1)
+
 appState
-    |> Obs.map (List.map AccountDetails.FromState)
-    |> Obs.distinctUntilChanged
-    |> Obs.subscribe appStateBuffer.OnNext
+|> Obs.map (List.map AccountDetails.FromState)
+|> Obs.distinctUntilChanged
+|> Obs.subscribe appStateBuffer.OnNext
 
 let send (ws: WebSocket) text =
   async { 

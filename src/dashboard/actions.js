@@ -31,3 +31,10 @@ export function turnOff(id){
         remote: `turnOff ${id}`
     }
 }
+
+export function endpointSelected(id){
+    return {
+        type: 'ENDPOINT_SELECTED',
+        id
+    }
+}
