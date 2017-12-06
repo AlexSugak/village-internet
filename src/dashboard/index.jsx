@@ -24,7 +24,7 @@ let createMessagesStream = (url) => {
     return Rx.Subject.create(observer, observable)
 }
 
-const wsUri = "ws://localhost:8083/socket"
+const wsUri = "ws://127.0.0.1:8080/socket"
 let messages = createMessagesStream(wsUri);
 
 const remoteMiddleware = msgObserver => store => next => action => {

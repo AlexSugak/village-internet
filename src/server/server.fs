@@ -1,3 +1,4 @@
+#if INTERACTIVE
 #r "packages/Suave/lib/net40/Suave.dll"
 #r "packages/Rx-Core/lib/net45/System.Reactive.Core.dll"
 #r "packages/Rx-Linq/lib/net45/System.Reactive.Linq.dll"
@@ -7,6 +8,7 @@
 #r "packages/FParsec/lib/net40-client/FParsecCS.dll"
 #r "packages/Chiron/lib/net40/Chiron.dll"
 #r "packages/FSharp.Control.Reactive/lib/net45/FSharp.Control.Reactive.dll"
+#endif
 
 open Suave
 open Suave.Http
@@ -78,10 +80,12 @@ let clientEvents = new Subject<ClientId*ClientEvent>()
 // log all client events to console
 clientEvents |> Obs.subscribe (printfn "%A") |> ignore 
 
-type Agent<'T> = Microsoft.FSharp.Control.MailboxProcessor<'T>
+type Actor<'T> = Microsoft.FSharp.Control.MailboxProcessor<'T>
 
-let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) = 
-  let agent = new Agent<AccountCommand>(fun inbox ->
+let createEndpointActor 
+      validateCommand 
+      (accEvents: IObserver<AccountEvent>) = 
+  let actor = new Actor<AccountCommand>(fun inbox ->
     let state = ref {TurnedOn = false; Speed = 0}
     let rec handleCmd() = 
       async {
@@ -110,8 +114,8 @@ let createEndpointAgent validateCommand (accEvents: IObserver<AccountEvent>) =
 
     handleCmd()
   )
-  agent.Start()
-  agent
+  actor.Start()
+  actor
 
 let validateCommand status cmd = 
   match status, cmd with
@@ -167,8 +171,9 @@ let accountEvents =
 
 
 let connectEndpoint commands events accountId = 
-  let agent = createEndpointAgent validateCommand events
-
+  let actor = createEndpointActor 
+                validateCommand 
+                events
   commands
   // we need all commands
   |> Obs.map snd 
@@ -176,11 +181,11 @@ let connectEndpoint commands events accountId =
   |> Obs.filter (fun (id, _) -> id = accountId)
   // and we only care about the command itself 
   |> Obs.map snd 
-  // that we send to an agent
-  |> Obs.subscribe agent.Post 
+  // that we send to an actor
+  |> Obs.subscribe actor.Post 
   |> ignore
 
-  agent // return agent created
+  actor // return actor created
 
 // connect all account endpoints
 accountEvents 
@@ -236,7 +241,7 @@ appState
 
 let send (ws: WebSocket) text =
   async { 
-    do! ws.send Text (text |> utfBytes) true |> Async.Ignore
+    do! ws.send Text (Sockets.ByteSegment(text |> utfBytes)) true |> Async.Ignore
   }
   |> Async.Start
   
@@ -274,7 +279,7 @@ let socketApp (ws: WebSocket) =
     clientDisconnected 
     |> Obs.subscribe (fun id -> 
                               loop := false
-                              sendOp ws Close [||]) 
+                              sendOp ws Close (Sockets.ByteSegment([||])))
     |> ignore
 
     //all messages from connected client
@@ -310,6 +315,17 @@ let app : WebPart =
         NOT_FOUND "Found no handlers"
     ]
 
-startWebServer {defaultConfig 
-                with homeFolder = Some (Path.GetFullPath(Environment.CurrentDirectory + "/../yardWeb/dist/"))} 
-               app 
+#if INTERACTIVE
+let clientDir = Path.GetFullPath(Environment.CurrentDirectory + "/../dashboard/dist/")
+#else
+let clientDir = Path.GetFullPath(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) + "/client/")
+#endif
+
+[<EntryPoint>]
+let main _ = 
+    printfn "Home folder is %s" clientDir
+    startWebServer { defaultConfig 
+                     with homeFolder = Some (clientDir)} 
+                    app 
+
+    0 // return an integer exit code
