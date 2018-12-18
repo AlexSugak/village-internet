@@ -8,18 +8,8 @@ A demo app showing functional approach to building reactive client-server system
 
 Requires [nodejs](http://nodejs.org/) and [Mono](http://fsharp.org/use/mac/) on Mac/Linux or [F#](http://fsharp.org/use/windows/) on Windows.
 
-Build server (Mac):
-```sh
-sh build.sh
-```
-Build server (Windows):
-```sh
-build.cmd
-```
-Then start server from bin/server.exe Or from server.fsx via REPL
 
-Build and start client:
+Build and run server + client:
 ```sh
-npm install && webpack-dev-server
+cd ./src/server && sh ./build.sh
 ```
-Then open browser at localhost:8080

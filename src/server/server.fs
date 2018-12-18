@@ -11,12 +11,9 @@
 #endif
 
 open Suave
-open Suave.Http
 open Suave.Filters
-open Suave.Successful
 open Suave.Files
 open Suave.RequestErrors
-open Suave.Logging
 
 open Chiron
 open Chiron.Operators
@@ -31,7 +28,6 @@ open Suave.WebSocket
 
 open System.Reactive.Subjects
 open FSharp.Control.Reactive
-open FSharp.Control.Reactive.Observable
 
 module Obs = Observable
 
@@ -63,22 +59,12 @@ type AccountEvent =
 | StatusMeasured of EndpointStatus
 | StatusSet of EndpointStatus
 
-let accountStateReducer state msg =
-  match msg with
-  | StatusMeasured(s) -> {state with StatusMeasured = Some(s)}
-  | StatusSet(s) -> {state with StatusSet = Some(s)}
-
 type ClientId = ClientId of Guid
 
 type ClientEvent = 
   | ClientConnected
   | MessageReceived of string
   | ClientDisconnected 
-
-let clientEvents = new Subject<ClientId*ClientEvent>()
-
-// log all client events to console
-clientEvents |> Obs.subscribe (printfn "%A") |> ignore 
 
 type Actor<'T> = Microsoft.FSharp.Control.MailboxProcessor<'T>
 
@@ -128,6 +114,18 @@ let validateCommand status cmd =
   // other cases are forbiden 
   | _ -> None 
 
+let clientEvents = new Subject<ClientId*ClientEvent>()
+
+// log all client events to console
+clientEvents |> Obs.subscribe (printfn "%A") |> ignore
+
+// all messages sent by all clients
+let clientMessages = 
+    clientEvents 
+      |> Obs.choose (function 
+                      | (id, MessageReceived(msg)) -> Some(id, msg) 
+                      | _ -> None)
+
 // parse command messages
 let (|ClientCommand|_|) (s:string) = 
   let tokens = s.Trim().Split([|' '|]) |> Array.map (fun s -> s.Trim())
@@ -136,13 +134,6 @@ let (|ClientCommand|_|) (s:string) =
   | "turnOff" -> (AccountId(tokens.[1]), TurnOff) |> Some
   | "setSpeedLimit" -> (AccountId(tokens.[1]), SetSpeedLimit(tokens.[2] |> int)) |> Some
   | _ -> None
-
-// all messages sent by all clients
-let clientMessages = 
-    clientEvents 
-      |> Obs.choose (function 
-                      | (id, MessageReceived(msg)) -> Some(id, msg) 
-                      | _ -> None)
 
 // all command messages sent by all clients
 let clientCommands = 
@@ -167,8 +158,6 @@ let accountEvents =
       //|> Observable.ofSeq   
       // if we need to make list of accounts dynamic 
       // e.g. new accounts are connected at runtime
-
-
 
 let connectEndpoint commands events accountId = 
   let actor = createEndpointActor 
@@ -214,6 +203,11 @@ type AccountDetails =
                            | Some(s) -> s.Speed
                            | None -> 0}
 
+let accountStateReducer state msg =
+  match msg with
+  | StatusMeasured(s) -> {state with StatusMeasured = Some(s)}
+  | StatusSet(s) -> {state with StatusSet = Some(s)}
+
 let accountStates = 
     accountEvents
     |> List.map (fun (id, e) -> 
@@ -238,6 +232,7 @@ appState
 |> Obs.map (List.map AccountDetails.FromState)
 |> Obs.distinctUntilChanged
 |> Obs.subscribe appStateBuffer.OnNext
+|> ignore
 
 let send (ws: WebSocket) text =
   async { 

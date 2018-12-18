@@ -4,7 +4,7 @@ import {createStore, applyMiddleware, combineReducers} from 'redux'
 import {Provider} from 'react-redux'
 import Rx from 'rx'
 
-import {AppContainer} from './components/App'
+import {AppContainer} from './App'
 import {endpoints, chart} from './reducers'
 import {receivedServerState} from './actions'
 

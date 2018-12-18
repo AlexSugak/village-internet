@@ -3,7 +3,7 @@ import {Navbar, Nav, NavItem, Badge, ProgressBar} from 'react-bootstrap'
 import Switch from 'react-bootstrap-switch'
 import {LineChart, XAxis, YAxis, Line, Tooltip, CartesianGrid, ResponsiveContainer} from 'recharts'
 import {connect} from 'react-redux'
-import * as actions from '../actions'
+import * as actions from './actions'
 
 
 const EndpointChart = ({data}) => (
@@ -70,7 +70,7 @@ const EndpointInfo = ({endpoint, onSelectEndpoint}) => (
 )
 
 const Endpoint = ({endpoint, onTurnOn, onTurnOff, onSetSpeed, onSelectEndpoint}) => (
-    <div className="row" style={{paddingBottom: '10px'}}>
+    <div className="row" style={{paddingBottom: '20px'}}>
         <EndpointInfo endpoint={endpoint} onSelectEndpoint={() => onSelectEndpoint(endpoint.id)} />
         <div className="col-md-1">
             <Switch 
